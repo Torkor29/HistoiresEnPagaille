@@ -161,7 +161,7 @@ export const storyCharacterSchema = z.object({
   name: z.string(),
   role: z.enum(['principal', 'secondaire']),
   /** Relation / label (ex. "sœur", "frère", "enfant principal") — évite les confusions entre personnages. */
-  relation: z.string().optional(),
+  relation: z.string().nullable().optional(),
   /** Description physique seule : visage, cheveux, yeux, teint, âge, corpulence. Très détaillée (teintes précises). */
   visualDescription: z.string(),
   /** Tenue portée par défaut dans l'histoire. Décrite au détail (couleur, coupe, accessoires). */
