@@ -26,6 +26,13 @@ if not exist "node_modules" (
     echo.
 )
 
+if not exist ".env" (
+    echo Premier lancement : creation de .env depuis .env.example...
+    copy .env.example .env >nul
+    echo Pensez a editer .env pour ajouter GEMINI_API_KEY si besoin.
+    echo.
+)
+
 echo Ouverture du navigateur dans 5 secondes (http://localhost:3000)...
 start "" cmd /c "timeout /t 5 /nobreak >nul && start http://localhost:3000"
 

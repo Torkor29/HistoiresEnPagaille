@@ -4,10 +4,12 @@ Ce guide permet d’héberger la web app **Histoires Enfant** sur [Render](https
 
 ## Schémas Prisma : local vs prod (ne pas mélanger)
 
-- **`prisma/schema.prisma`** = **toujours SQLite** pour le dev local. Ton `.env` doit avoir `DATABASE_URL="file:./prisma/dev.db"`. Ne pas le remplacer.
+- **`prisma/schema.prisma`** = **toujours SQLite** pour le dev local. Ton `.env` doit avoir `DATABASE_URL="file:./dev.db"`. Ne pas le remplacer.
 - **`prisma/schema.postgresql.prisma`** = **PostgreSQL** pour la prod (Render, Neon). Il n’est utilisé que pendant le build sur Render (`prisma generate --schema=...` et `prisma db push --schema=...`).
 
 En local tu ne touches qu’à `schema.prisma` et à `DATABASE_URL` (fichier SQLite). Sur Render, le script de build utilise uniquement `schema.postgresql.prisma` sans modifier ton repo.
+
+**Erreur en local « the URL must start with postgresql:// »** : le client Prisma a été généré avec le schéma Postgres (ex. après un build pour Render). En lançant `npm run dev` ou `npm run dev:all`, le script exécute maintenant `prisma generate` en premier, donc le client redevient SQLite. Vérifie que ton `.env` contient bien **`DATABASE_URL="file:./dev.db"`** (et pas une URL Postgres).
 
 ## Prérequis
 

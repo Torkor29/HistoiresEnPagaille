@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n app,images \"next dev\" \"node scripts/local-image-server.js\"",
+    "dev": "prisma generate && concurrently -n app,images \"next dev\" \"node scripts/local-image-server.js\"",
     "dev:all": "node scripts/start-dev-with-forge.js",
     "build": "next build",
     "start": "next start",
