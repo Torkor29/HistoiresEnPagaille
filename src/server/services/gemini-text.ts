@@ -13,6 +13,20 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 1000;
 
+/** Réduit les blocages abusifs pour contenus jeunesse : on ne bloque qu’au seuil HIGH. */
+/** Désactiver avec GEMINI_USE_RELAXED_SAFETY=false pour revenir au défaut API (utile si blocages inexpliqués). */
+const USE_RELAXED_SAFETY = process.env.GEMINI_USE_RELAXED_SAFETY !== 'false';
+export const SAFETY_CONFIG = USE_RELAXED_SAFETY
+  ? {
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
+    }
+  : undefined;
+
 function hashPrompt(text: string): string {
   return createHash('sha256').update(text).digest('hex').slice(0, 16);
 }
@@ -164,6 +178,7 @@ export async function generateSynopsis(
       contents: [
         { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] },
       ],
+      config: SAFETY_CONFIG,
     });
     return extractTextOrThrow(response, 'synopsis');
   }, requestId);
@@ -223,6 +238,7 @@ export async function generateStory(
       contents: [
         { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] },
       ],
+      config: SAFETY_CONFIG,
     });
     return extractTextOrThrow(response, 'story');
   }, requestId);
@@ -251,6 +267,7 @@ Réponds uniquement par le texte du synopsis, sans préambule.`;
     const res = await gemini.models.generateContent({
       model: getTextModel(),
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: SAFETY_CONFIG,
     });
     return (res as { text?: string })?.text ?? '';
   }, requestId, 30000);
@@ -270,6 +287,7 @@ Réponds UNIQUEMENT par un JSON : { "pages": [ { "pageNumber": 1, "type": "TEXTE
     const res = await gemini.models.generateContent({
       model: getTextModel(),
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: SAFETY_CONFIG,
     });
     return (res as { text?: string })?.text ?? '';
   }, requestId, 30000);
@@ -319,6 +337,7 @@ export async function generateCharacterDescriptor(
         ],
       },
     ],
+    config: SAFETY_CONFIG,
   });
   const text = (response as { text?: string })?.text ?? '';
   const raw = text.trim();

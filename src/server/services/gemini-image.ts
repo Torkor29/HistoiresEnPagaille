@@ -6,6 +6,7 @@
 
 import { createHash } from 'crypto';
 import { gemini, getImageModel, isGeminiAvailable } from './gemini-client';
+import { SAFETY_CONFIG } from './gemini-text';
 import { logger } from '@/lib/logger';
 
 const DEFAULT_TIMEOUT_MS = 90_000;
@@ -75,6 +76,7 @@ export async function generateImage(params: {
         model,
         contents: [{ role: 'user', parts }],
         config: {
+          ...SAFETY_CONFIG,
           responseModalities: ['TEXT', 'IMAGE'],
           imageConfig: { aspectRatio },
         },

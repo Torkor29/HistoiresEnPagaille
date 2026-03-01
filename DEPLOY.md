@@ -66,6 +66,7 @@ L’app est disponible à l’URL Render (ex. `https://histoires-enfant.onrender
 | `REPLICATE_API_TOKEN` | Optionnel | Alternative pour la génération d’images (Replicate). |
 | `UPLOAD_DIR` | Optionnel | Dossier des uploads (défaut : `./uploads`). Sur Render avec Disk : `/data/uploads`. |
 | `NODE_VERSION` | Optionnel | Ex. `20` (Render utilise souvent 20 par défaut). |
+| `GEMINI_USE_RELAXED_SAFETY` | Optionnel | `false` pour désactiver les réglages de sécurité assouplis (si blocages inattendus). |
 
 ## Après le déploiement
 
@@ -96,3 +97,4 @@ Pour avoir **tous les thèmes avec leurs synopsis**, comme en local, exécute **
 - **Build échoue sur `prisma db push`** : vérifier que `DATABASE_URL` est bien défini pour le **build** (Render propose d’injecter les variables de la DB au build).
 - **Erreur "column does not exist"** : le schéma en prod n’est pas à jour. Relancer un déploiement (build refait un `prisma db push`).
 - **Images / illustrations ne s’affichent pas** : vérifier que `UPLOAD_DIR` pointe vers un Disk monté si vous utilisez l’option 1 (Render Disk), et que le dossier existe.
+- **« Réponse Gemini bloquée » / PROHIBITED_CONTENT** : en prod, vérifier que `GEMINI_API_KEY` est bien définie (identique à la clé qui marche en local). Si ça marchait en local et plus en prod, souvent la clé n’est pas renseignée ou comporte une typo. Sinon, essayer un autre thème ou mettre `GEMINI_USE_RELAXED_SAFETY=false` pour revenir au comportement par défaut de l’API.
