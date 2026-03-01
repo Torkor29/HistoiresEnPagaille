@@ -1,11 +1,10 @@
 #!/usr/bin/env sh
-# Build pour Render : utilise le schéma Postgres, applique le schéma en base seulement si DATABASE_URL est défini.
+# Build pour Render : utilise le schéma Postgres sans toucher à schema.prisma (reste SQLite pour le dev local).
 set -e
-cp prisma/schema.postgresql.prisma prisma/schema.prisma
 npm install
-npx prisma generate
+npx prisma generate --schema=prisma/schema.postgresql.prisma
 if [ -n "$DATABASE_URL" ]; then
-  npx prisma db push
+  npx prisma db push --schema=prisma/schema.postgresql.prisma
 else
   echo "DATABASE_URL non défini : prisma db push ignoré (pensez à l'ajouter dans Render pour le prochain déploiement)."
 fi

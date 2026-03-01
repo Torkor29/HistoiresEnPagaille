@@ -280,10 +280,37 @@ export function getSceneIllustrationPrompt(
     parts.push('=== THIS SCENE (from the story — use this as the source of truth) ===');
     parts.push(`SCENE DESCRIPTION: ${scenePrompt}`);
     parts.push('Illustrate exactly what this text describes (same characters, same action, same setting). The child and any animals must look exactly like their reference images; only pose and placement change.');
-    if (sceneOutfitContext) {
-      parts.push(`OUTFIT CONTEXT FOR THIS SCENE: "${sceneOutfitContext}". The character wears the outfit that corresponds to this context (e.g. "sous-marin" = underwater outfit, "plage" = beach outfit).`);
-    }
     parts.push('');
+
+    // ----- TENUE EXACTE POUR CETTE SCÈNE (éviter tenue grise / générique) -----
+    if (allCharacters && allCharacters.length > 0) {
+      const outfitBlocks: string[] = [];
+      for (const c of allCharacters) {
+        if (isAnimalCharacter(c)) continue;
+        const contextKey = (sceneOutfitContext || '').trim().toLowerCase();
+        const contextOutfit =
+          contextKey && c.contextOutfits?.length
+            ? c.contextOutfits.find((o) => o.context.trim().toLowerCase() === contextKey)
+            : null;
+        const outfitText = contextOutfit
+          ? `CONTEXT "${contextKey}": ${contextOutfit.outfitDescription}`
+          : c.defaultOutfit
+            ? `DEFAULT (daily outfit): ${c.defaultOutfit}`
+            : null;
+        if (outfitText) {
+          outfitBlocks.push(`${c.name} (ref image): ${outfitText}`);
+        }
+      }
+      if (outfitBlocks.length > 0) {
+        parts.push('OUTFIT FOR THIS SCENE — draw EXACTLY this (do NOT draw grey, generic, or different clothing):');
+        parts.push(...outfitBlocks);
+        parts.push('');
+      }
+    }
+    if (sceneOutfitContext) {
+      parts.push(`OUTFIT CONTEXT KEY: "${sceneOutfitContext}". Use the context outfit described above for this scene.`);
+      parts.push('');
+    }
     parts.push('CONSISTENCY RULE — Apply changes ONLY when the story explicitly says so:');
     parts.push('- Same location + same outfit context (e.g. same underwater grotto, same "sous-marin") → same outfit, same atmosphere (same fog/brouillard, same lighting). Do NOT vary.');
     parts.push('- When the STORY explicitly describes a change, apply it: new place (e.g. he enters a cave, he goes back to the beach) → new location and new outfit context; character changes clothes (e.g. "he puts on his best costume") → new outfit; atmosphere change (e.g. "the sky clears", "the fog lifts") → change the atmosphere. Otherwise stay consistent.');

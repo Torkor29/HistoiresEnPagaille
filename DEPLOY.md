@@ -2,6 +2,13 @@
 
 Ce guide permet d’héberger la web app **Histoires Enfant** sur [Render](https://render.com).
 
+## Schémas Prisma : local vs prod (ne pas mélanger)
+
+- **`prisma/schema.prisma`** = **toujours SQLite** pour le dev local. Ton `.env` doit avoir `DATABASE_URL="file:./prisma/dev.db"`. Ne pas le remplacer.
+- **`prisma/schema.postgresql.prisma`** = **PostgreSQL** pour la prod (Render, Neon). Il n’est utilisé que pendant le build sur Render (`prisma generate --schema=...` et `prisma db push --schema=...`).
+
+En local tu ne touches qu’à `schema.prisma` et à `DATABASE_URL` (fichier SQLite). Sur Render, le script de build utilise uniquement `schema.postgresql.prisma` sans modifier ton repo.
+
 ## Prérequis
 
 - Un compte Render
@@ -22,7 +29,7 @@ Ce guide permet d’héberger la web app **Histoires Enfant** sur [Render](https
    - **`DATABASE_URL`** : l’URL PostgreSQL de l’étape 1.
    - **`GEMINI_API_KEY`** (ou `REPLICATE_API_TOKEN`) pour les illustrations.
 
-5. Déployez. Le build exécute `scripts/render-build.sh` (copie schéma Postgres, `npm install`, `prisma generate`, `prisma db push` si `DATABASE_URL` est défini, puis `npm run build`).
+5. Déployez. Le build exécute `scripts/render-build.sh` (`prisma generate` et `db push` avec le schéma Postgres uniquement, sans modifier ton schéma local).
 
 L’app est disponible à l’URL Render (ex. `https://histoires-enfant.onrender.com`).
 
@@ -74,18 +81,16 @@ L’app est disponible à l’URL Render (ex. `https://histoires-enfant.onrender
 
 Les **noms** des thèmes (Pirates, Espace, Cirque, etc.) viennent du code et sont toujours là. En revanche, les **synopsis préfaits** (le contenu de chaque histoire type « Aventure 1 / 2 » par thème) sont en base : une Neon neuve a la table `PremadeSynopsis` vide.
 
-Pour avoir **tous les thèmes avec leurs synopsis**, comme en local, exécute **une fois** le script de seed en pointant vers ta base Neon :
+Pour avoir **tous les thèmes avec leurs synopsis**, comme en local, exécute **une fois** le script de seed en pointant vers ta base Neon. **Recommandé** (sans toucher à ton Prisma local) :
 
-1. À la racine du projet (en local), avec Node installé :
-   ```bash
-   cp prisma/schema.postgresql.prisma prisma/schema.prisma
-   npx prisma generate
-   set DATABASE_URL=postgresql://neondb_owner:...@ep-....neon.tech/neondb?sslmode=require
-   node scripts/seed-premade-synopses.js
-   ```
-   (Sous Linux/Mac : `export DATABASE_URL=...` au lieu de `set`.)
+```bash
+NEON_DATABASE_URL="postgresql://neondb_owner:...@ep-....-pooler.region.aws.neon.tech/neondb?sslmode=require"
+node scripts/seed-premade-to-neon.js
+```
 
-2. Utilise **exactement** la même URL que celle que tu as mise sur Render (ta connexion Neon). Le script insère 2 synopsis par thème dans `PremadeSynopsis`. Une fois fait, l’app sur Render affichera tous les thèmes avec leurs synopsis.
+Utilise la même URL que sur Render (pooled). Aucun `prisma generate` ni modification de `schema.prisma`.
+
+**Alternative** avec Prisma : `npx prisma generate --schema=prisma/schema.postgresql.prisma` puis `DATABASE_URL="postgresql://..." node scripts/seed-premade-synopses.js`. Pense à relancer ensuite `npx prisma generate` (sans --schema) pour retrouver le client SQLite en local.
 
 - Les **formats de livre** (A4, A5, etc.) sont créés automatiquement par l’app au premier usage, pas besoin de seed (ils peuvent aussi être pré-remplis sur Neon).
 - **Alternative sans Prisma** : pour remplir uniquement les synopsis préfaits sur Neon : `NEON_DATABASE_URL="postgresql://..." node scripts/seed-premade-to-neon.js` (nécessite `pg`).

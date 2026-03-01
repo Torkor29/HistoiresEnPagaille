@@ -14,9 +14,11 @@ const LABELS: Record<CorrectionType, string> = {
 export function IllustrationCorrectionForm({
   sceneId,
   initialCorrection,
+  storyOutfitForCorrection = null,
 }: {
   sceneId: string;
   initialCorrection: { type: CorrectionType; detail: string } | null;
+  storyOutfitForCorrection?: { label: string; description: string } | null;
 }) {
   const [type, setType] = useState<CorrectionType>(initialCorrection?.type ?? 'tenue');
   const [detail, setDetail] = useState(initialCorrection?.detail ?? '');
@@ -113,6 +115,18 @@ export function IllustrationCorrectionForm({
           rows={2}
           className="w-full rounded border border-stone-300 bg-white px-3 py-2 text-sm placeholder:text-stone-400"
         />
+        {storyOutfitForCorrection && (
+          <button
+            type="button"
+            onClick={() => {
+              setType('tenue');
+              setDetail(storyOutfitForCorrection.description);
+            }}
+            className="mt-2 text-xs text-primary-600 hover:underline"
+          >
+            Remplacer par {storyOutfitForCorrection.label}
+          </button>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         <button

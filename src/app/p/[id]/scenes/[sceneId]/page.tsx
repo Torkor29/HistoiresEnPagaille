@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { prisma } from '@/server/db';
 import { RegenerateButton } from './RegenerateButton';
 import { IllustrationCorrectionForm } from './IllustrationCorrectionForm';
+import type { StoryCharacter } from '@/lib/schemas';
 
 async function getScene(projectId: string, sceneId: string) {
   const scene = await prisma.scene.findFirst({
@@ -13,6 +14,32 @@ async function getScene(projectId: string, sceneId: string) {
     },
   });
   return scene;
+}
+
+/** Retourne la tenue à afficher pour la correction "Remplacer par tenue histoire" (contexte ou quotidien). */
+function getStoryOutfitForCorrection(
+  sceneOutfitContext: string | null | undefined,
+  characters: StoryCharacter[]
+): { label: string; description: string } | null {
+  const principal = characters.find((c) => c.role === 'principal');
+  if (!principal || isAnimalCharacter(principal)) return null;
+  const contextKey = (sceneOutfitContext || '').trim().toLowerCase();
+  const contextOutfit =
+    contextKey && principal.contextOutfits?.length
+      ? principal.contextOutfits.find((o) => o.context.trim().toLowerCase() === contextKey)
+      : null;
+  const description = contextOutfit
+    ? contextOutfit.outfitDescription
+    : (principal.defaultOutfit || '').trim();
+  if (!description) return null;
+  const label = contextOutfit
+    ? `Tenue histoire (${contextKey})`
+    : 'Tenue du quotidien';
+  return { label, description };
+}
+
+function isAnimalCharacter(c: StoryCharacter): boolean {
+  return !c.defaultOutfit && (!c.contextOutfits || c.contextOutfits.length === 0) && !!c.visualDescription;
 }
 
 export default async function SceneDetailPage({
@@ -57,7 +84,7 @@ export default async function SceneDetailPage({
           ))}
         </div>
         <div className="mt-6 border-t border-stone-200 pt-4 space-y-4">
-          <IllustrationCorrectionForm sceneId={sceneId} initialCorrection={initialCorrection} />
+          <IllustrationCorrectionForm sceneId={sceneId} initialCorrection={initialCorrection} storyOutfitForCorrection={storyOutfitForCorrection} />
           <RegenerateButton projectId={id} sceneId={sceneId} />
         </div>
       </div>
