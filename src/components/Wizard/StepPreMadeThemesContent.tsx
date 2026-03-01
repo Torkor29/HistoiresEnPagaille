@@ -50,6 +50,12 @@ export function StepPreMadeThemesContent(props: any) {
         )}
       </div>
 
+      {!loading && Object.keys(synopsesByTheme || {}).length === 0 && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Aucune inspiration en base pour l’instant. Clique sur <strong>Régénérer tout</strong> pour en générer avec l’API (Gemini) — ou exécute une fois le script de seed en local (voir DEPLOY.md) puis recharge.
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {loading
           ? PREMADE_THEMES.slice(0, 12).map((t) => (

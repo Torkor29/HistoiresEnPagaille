@@ -16,13 +16,15 @@
     "db:studio": "prisma studio",
     "local-image-server": "node scripts/local-image-server.js",
     "list-gemini-models": "node scripts/list-gemini-models.js",
-    "seed:premade": "node scripts/seed-premade-synopses.js"
+    "seed:premade": "node scripts/seed-premade-synopses.js",
+    "sync-to-neon": "node scripts/sync-local-to-neon.js"
   },
   "dependencies": {
     "@google/genai": "^1.41.0",
     "@react-pdf/renderer": "^3.4.4",
     "archiver": "^7.0.1",
     "next": "14.2.18",
+    "pg": "^8.13.0",
     "pino": "^9.5.0",
     "pdf-lib": "^1.17.1",
     "pino-pretty": "^11.3.0",

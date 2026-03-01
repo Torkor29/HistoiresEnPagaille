@@ -17,6 +17,39 @@ function hashPrompt(text: string): string {
   return createHash('sha256').update(text).digest('hex').slice(0, 16);
 }
 
+/** Extrait le texte de la réponse Gemini ; si vide, renvoie la raison (blocage sécurité, etc.) pour un message d'erreur clair. */
+function extractTextOrThrow(response: unknown, context: string): string {
+  const r = response as {
+    text?: string;
+    candidates?: Array<{
+      content?: { parts?: Array<{ text?: string }> };
+      finishReason?: string;
+    }>;
+    promptFeedback?: { blockReason?: string };
+  };
+  let text = r?.text ?? '';
+  if (!text && r?.candidates?.[0]) {
+    const parts = r.candidates[0].content?.parts ?? [];
+    text = parts.map((p) => p.text ?? '').join('');
+  }
+  if (text && text.trim()) return text.trim();
+
+  const finishReason = r?.candidates?.[0]?.finishReason ?? '';
+  const blockReason = r?.promptFeedback?.blockReason ?? '';
+  if (finishReason === 'SAFETY' || blockReason) {
+    const reason = blockReason || finishReason;
+    throw new Error(
+      `Réponse Gemini bloquée (filtre de sécurité ou contenu refusé). Réessayez ou simplifiez un peu le thème. Détail : ${reason}`
+    );
+  }
+  if (finishReason === 'MAX_TOKENS') {
+    throw new Error('Réponse Gemini tronquée (limite de tokens). Réessayez avec une histoire plus courte.');
+  }
+  throw new Error(
+    `Réponse Gemini vide (${context}). Vérifiez GEMINI_API_KEY et que le modèle est disponible sur Google AI Studio. Réessayez dans quelques instants si le problème persiste.`
+  );
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   requestId?: string,
@@ -132,9 +165,7 @@ export async function generateSynopsis(
         { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] },
       ],
     });
-    const text = (response as { text?: string })?.text ?? '';
-    if (!text) throw new Error('Réponse Gemini vide');
-    return text;
+    return extractTextOrThrow(response, 'synopsis');
   }, requestId);
 
   // Extraire JSON (parfois entouré de ```json ... ```)
@@ -193,9 +224,7 @@ export async function generateStory(
         { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] },
       ],
     });
-    const text = (response as { text?: string })?.text ?? '';
-    if (!text) throw new Error('Réponse Gemini vide');
-    return text;
+    return extractTextOrThrow(response, 'story');
   }, requestId);
 
   let jsonStr = raw.trim();

@@ -34,12 +34,19 @@ export function StepPreMadeThemes({
   const loadSynopses = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/premade-themes/synopses');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch('/api/premade-themes/synopses', { signal: controller.signal });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error('Erreur chargement');
       const data = await res.json();
       setSynopsesByTheme(data.synopsesByTheme || {});
-    } catch {
-      toast.error('Impossible de charger les inspirations');
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') {
+        toast.error('Chargement trop long — réessayez ou vérifiez la connexion.');
+      } else {
+        toast.error('Impossible de charger les inspirations');
+      }
       setSynopsesByTheme({});
     } finally {
       setLoading(false);

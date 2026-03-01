@@ -86,7 +86,9 @@ Pour avoir **tous les thèmes avec leurs synopsis**, comme en local, exécute **
 
 2. Utilise **exactement** la même URL que celle que tu as mise sur Render (ta connexion Neon). Le script insère 2 synopsis par thème dans `PremadeSynopsis`. Une fois fait, l’app sur Render affichera tous les thèmes avec leurs synopsis.
 
-- Les **formats de livre** (A4, A5, etc.) sont créés automatiquement par l’app au premier usage, pas besoin de seed.
+- Les **formats de livre** (A4, A5, etc.) sont créés automatiquement par l’app au premier usage, pas besoin de seed (ils peuvent aussi être pré-remplis sur Neon).
+- **Alternative sans Prisma** : pour remplir uniquement les synopsis préfaits sur Neon : `NEON_DATABASE_URL="postgresql://..." node scripts/seed-premade-to-neon.js` (nécessite `pg`).
+- **Copier local → Neon** : avec des données modifiées en local (SQLite), définis `NEON_DATABASE_URL` et `DATABASE_URL`, puis `npm run sync-to-neon`.
 - Pour **changer le schéma** de la base : adapter `prisma/schema.postgresql.prisma`, puis garder `npx prisma db push` dans le Build Command sur Render.
 
 ## Dépannage
