@@ -62,6 +62,16 @@ export default async function SceneDetailPage({
     }
   }
 
+  let storyOutfitForCorrection: { label: string; description: string } | null = null;
+  if (scene.story?.characterDescriptors) {
+    try {
+      const characters = JSON.parse(scene.story.characterDescriptors) as StoryCharacter[];
+      storyOutfitForCorrection = getStoryOutfitForCorrection(scene.outfitContext ?? undefined, characters);
+    } catch {
+      // ignore
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link href={`/p/${id}`} className="text-primary-600 hover:underline">
