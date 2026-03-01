@@ -22,7 +22,7 @@ Ce guide permet d’héberger la web app **Histoires Enfant** sur [Render](https
    - **`DATABASE_URL`** : l’URL PostgreSQL de l’étape 1.
    - **`GEMINI_API_KEY`** (ou `REPLICATE_API_TOKEN`) pour les illustrations.
 
-5. Déployez. Le build exécute : copie du schéma Postgres → `npm install` → `prisma generate` → `prisma db push` → `npm run build`.
+5. Déployez. Le build exécute `scripts/render-build.sh` (copie schéma Postgres, `npm install`, `prisma generate`, `prisma db push` si `DATABASE_URL` est défini, puis `npm run build`).
 
 L’app est disponible à l’URL Render (ex. `https://histoires-enfant.onrender.com`).
 
@@ -36,10 +36,8 @@ L’app est disponible à l’URL Render (ex. `https://histoires-enfant.onrender
 
 3. **Configuration du service**
    - **Runtime** : Node
-   - **Build Command** :
-     ```bash
-     cp prisma/schema.postgresql.prisma prisma/schema.prisma && npm install && npx prisma generate && npx prisma db push && npm run build
-     ```
+   - **Build Command** : `sh scripts/render-build.sh`
+     (ou la commande longue équivalente si vous ne utilisez pas le script.)
    - **Start Command** : `npm start`
    - **Variables d’environnement** :
      - `DATABASE_URL` : URL de la base PostgreSQL (collée depuis la DB créée à l’étape 1)
@@ -71,8 +69,25 @@ L’app est disponible à l’URL Render (ex. `https://histoires-enfant.onrender
 
 ## Après le déploiement
 
-- Les **synopsis préfaits** (thèmes) sont chargés depuis la base. Si la table `PremadeSynopsis` est vide, exécutez une fois le seed en local puis exportez les données, ou exécutez le script de seed sur une base de prod (avec précaution).
-- Pour **changer le schéma** de la base (nouveaux champs, etc.) : adapter `prisma/schema.postgresql.prisma` (ou `schema.prisma` après le `cp`), puis dans le **Build Command** garder `npx prisma db push` pour appliquer les changements sans gérer des migrations Postgres.
+### Remplir les thèmes préfaits (synopsis par thème) — une seule fois
+
+Les **noms** des thèmes (Pirates, Espace, Cirque, etc.) viennent du code et sont toujours là. En revanche, les **synopsis préfaits** (le contenu de chaque histoire type « Aventure 1 / 2 » par thème) sont en base : une Neon neuve a la table `PremadeSynopsis` vide.
+
+Pour avoir **tous les thèmes avec leurs synopsis**, comme en local, exécute **une fois** le script de seed en pointant vers ta base Neon :
+
+1. À la racine du projet (en local), avec Node installé :
+   ```bash
+   cp prisma/schema.postgresql.prisma prisma/schema.prisma
+   npx prisma generate
+   set DATABASE_URL=postgresql://neondb_owner:...@ep-....neon.tech/neondb?sslmode=require
+   node scripts/seed-premade-synopses.js
+   ```
+   (Sous Linux/Mac : `export DATABASE_URL=...` au lieu de `set`.)
+
+2. Utilise **exactement** la même URL que celle que tu as mise sur Render (ta connexion Neon). Le script insère 2 synopsis par thème dans `PremadeSynopsis`. Une fois fait, l’app sur Render affichera tous les thèmes avec leurs synopsis.
+
+- Les **formats de livre** (A4, A5, etc.) sont créés automatiquement par l’app au premier usage, pas besoin de seed.
+- Pour **changer le schéma** de la base : adapter `prisma/schema.postgresql.prisma`, puis garder `npx prisma db push` dans le Build Command sur Render.
 
 ## Dépannage
 

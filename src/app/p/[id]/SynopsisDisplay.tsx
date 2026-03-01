@@ -5,15 +5,21 @@ type SynopsisData = SynopsisOutput | string | null | undefined;
 function parseSynopsis(raw: SynopsisData): SynopsisOutput | null {
   if (!raw) return null;
   if (typeof raw === 'object' && 'title' in raw && Array.isArray((raw as SynopsisOutput).chapters)) {
-    return raw as SynopsisOutput;
+    const obj = raw as Record<string, unknown>;
+    if (!Array.isArray(obj.safetyChecklist)) obj.safetyChecklist = [];
+    return obj as SynopsisOutput;
   }
   if (typeof raw === 'string') {
     try {
       const parsed = JSON.parse(raw) as unknown;
-      if (parsed && typeof parsed === 'object' && 'chapters' in parsed) return parsed as SynopsisOutput;
+      if (parsed && typeof parsed === 'object' && 'chapters' in parsed) {
+        const p = parsed as Record<string, unknown>;
+        if (!Array.isArray(p.safetyChecklist)) p.safetyChecklist = [];
+        return p as SynopsisOutput;
+      }
     } catch {
       // pas du JSON : afficher comme paragraphe unique
-      return { title: '', childCharacterName: '', chapters: [], moral: raw };
+      return { title: '', childCharacterName: '', chapters: [], moral: raw, safetyChecklist: [] };
     }
   }
   return null;

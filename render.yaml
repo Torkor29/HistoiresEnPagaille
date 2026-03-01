@@ -8,12 +8,7 @@ services:
     runtime: node
     region: frankfurt
 
-    buildCommand: |
-      cp prisma/schema.postgresql.prisma prisma/schema.prisma
-      npm install
-      npx prisma generate
-      npx prisma db push
-      npm run build
+    buildCommand: sh scripts/render-build.sh
 
     startCommand: npm start
 

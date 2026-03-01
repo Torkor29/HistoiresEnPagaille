@@ -1,0 +1,2 @@
+# Scripts shell : LF pour Linux (Render)
+scripts/render-build.sh text eol=lf
