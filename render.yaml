@@ -1,0 +1,25 @@
+# Render — un seul service (Web)
+# Vous fournissez DATABASE_URL vous-même (Neon, Supabase, ou Postgres créé à part sur Render).
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: histoires-enfant
+    runtime: node
+    region: frankfurt
+
+    buildCommand: |
+      cp prisma/schema.postgresql.prisma prisma/schema.prisma
+      npm install
+      npx prisma generate
+      npx prisma db push
+      npm run build
+
+    startCommand: npm start
+
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # DATABASE_URL : à ajouter dans le dashboard (Secret) — URL PostgreSQL (Neon, Supabase, etc.)
+      # GEMINI_API_KEY ou REPLICATE_API_TOKEN : à ajouter pour les illustrations
+      # Optionnel (uploads persistants) : UPLOAD_DIR = /data/uploads + Disk monté sur /data

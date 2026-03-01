@@ -1,0 +1,140 @@
+// Copie du schéma pour production (Render, etc.) — PostgreSQL
+// En déploiement : cp prisma/schema.postgresql.prisma prisma/schema.prisma avant prisma generate / db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Preset format livre (A4, A5, 8x8, etc.)
+model BookFormat {
+  id          String   @id @default(cuid())
+  name        String
+  widthMm     Float
+  heightMm    Float
+  usageHint   String?
+  pagesShort  Int?
+  pagesMedium Int?
+  pagesLong   Int?
+  imageRatio  String?
+  fontSizeMin Int?
+  fontSizeMax Int?
+  createdAt   DateTime @default(now())
+}
+
+model Project {
+  id                   String   @id @default(cuid())
+  title                String   @default("Sans titre")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  settings             String
+  shareToken           String?  @unique
+  selectedCoverAssetId String?  @unique
+  assets               Asset[]
+  selectedCoverAsset   Asset?   @relation("SelectedCover", fields: [selectedCoverAssetId], references: [id], onDelete: SetNull)
+  story                Story?
+  jobs                 GenerationJob[]
+  exportFiles          ExportFile[]
+  printJobs            PrintJob[]
+}
+
+model Asset {
+  id                      String    @id @default(cuid())
+  projectId               String
+  project                 Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type                    String
+  url                     String
+  metadata                String?
+  createdAt               DateTime  @default(now())
+  scenes                  Scene[]
+  selectedCoverForProject Project?   @relation("SelectedCover")
+}
+
+model Story {
+  id                    String   @id @default(cuid())
+  projectId             String   @unique
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  language              String   @default("fr")
+  readingLevel          String
+  fullText              String?
+  synopsis              String?
+  safetyNotes           String?
+  coverTitle            String?
+  coverSubtitle         String?
+  backCoverSynopsis     String?
+  backCoverBio          String?
+  layoutPlan            String?
+  characterDescriptors  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  scenes                Scene[]
+}
+
+model Scene {
+  id                    String   @id @default(cuid())
+  storyId               String
+  story                 Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  order                 Int
+  title                 String?
+  text                  String
+  imagePrompt           String?
+  outfitContext         String?
+  illustrationAssetId    String?
+  illustrationAsset     Asset?   @relation(fields: [illustrationAssetId], references: [id], onDelete: SetNull)
+  illustrationCorrection String?
+  regenCount            Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model GenerationJob {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type         String
+  status       String
+  progress     Int      @default(0)
+  error        String?
+  tokens       Int?
+  costEstimate Float?
+  requestId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ExportFile {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String
+  url       String
+  metadata  String?
+  createdAt DateTime @default(now())
+}
+
+model PrintJob {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  provider     String?
+  status       String   @default("pending")
+  externalId   String?
+  checkoutUrl  String?
+  metadata     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PremadeSynopsis {
+  id         String   @id @default(cuid())
+  themeId    String
+  themeLabel String
+  icon       String
+  synopsis   String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+}

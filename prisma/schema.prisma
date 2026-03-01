@@ -1,0 +1,141 @@
+// Histoires Enfant — Prisma Schema
+// SQLite en dev, Postgres en prod (DATABASE_URL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Preset format livre (A4, A5, 8x8, etc.)
+model BookFormat {
+  id          String   @id @default(cuid())
+  name        String   // "A4", "A5", "8×8\"", etc.
+  widthMm     Float
+  heightMm    Float
+  usageHint   String?  // "album illustré", "roman jeunesse"
+  pagesShort  Int?     // recommandé durée court
+  pagesMedium Int?
+  pagesLong   Int?
+  imageRatio  String?  // "4:3", "1:1"
+  fontSizeMin Int?     // pt
+  fontSizeMax Int?
+  createdAt   DateTime @default(now())
+}
+
+model Project {
+  id                   String   @id @default(cuid())
+  title                String   @default("Sans titre")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  settings             String   // JSON: child profile, theme, style, bookFormatId, options
+  shareToken           String?  @unique // token pour lien lecture seule (ex: /l/xxx)
+  selectedCoverAssetId String?  @unique // si plusieurs couvertures, celle choisie
+  assets               Asset[]
+  selectedCoverAsset   Asset?   @relation("SelectedCover", fields: [selectedCoverAssetId], references: [id], onDelete: SetNull)
+  story                Story?
+  jobs                 GenerationJob[]
+  exportFiles          ExportFile[]
+  printJobs            PrintJob[]
+}
+
+model Asset {
+  id                      String    @id @default(cuid())
+  projectId               String
+  project                 Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type                    String    // PHOTO_REF | ILLUSTRATION | COVER_IMAGE | CHARACTER_REF
+  url                     String    // chemin ou URL signée
+  metadata                String?   // JSON: width, height, model, promptHash
+  createdAt               DateTime  @default(now())
+  scenes                  Scene[]
+  selectedCoverForProject Project?  @relation("SelectedCover")
+}
+
+model Story {
+  id           String   @id @default(cuid())
+  projectId    String   @unique
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  language     String   @default("fr")
+  readingLevel String   // facile | normal | avancé
+  fullText     String?  // texte complet
+  synopsis     String?  // JSON du synopsis structuré
+  safetyNotes  String?
+  coverTitle   String?
+  coverSubtitle String?
+  backCoverSynopsis String?
+  backCoverBio  String?
+  layoutPlan   String?  // JSON BookLayoutPlan
+  characterDescriptors String?  // JSON StoryCharacter[] — descriptions visuelles pour cohérence
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  scenes       Scene[]
+}
+
+model Scene {
+  id                    String   @id @default(cuid())
+  storyId               String
+  story                 Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  order                 Int
+  title                 String?
+  text                  String
+  imagePrompt           String?
+  outfitContext         String?  // ex: "plage", "nuit" — pour choisir la tenue des personnages dans cette scène
+  illustrationAssetId   String?
+  illustrationAsset     Asset?   @relation(fields: [illustrationAssetId], references: [id], onDelete: SetNull)
+  illustrationCorrection String?  // JSON: type tenue|coupe|autre + detail, utilise au regen
+  regenCount            Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model GenerationJob {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type         String   // SYNOPSIS | STORY | ILLUSTRATIONS | SCENE_REGEN | COVER | BACKCOVER | LAYOUT
+  status       String   // pending | running | completed | failed | cancelled
+  progress     Int      @default(0) // 0-100
+  error        String?
+  tokens       Int?
+  costEstimate Float?
+  requestId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ExportFile {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String   // interior_pdf | cover_wrap_pdf | print_pack_zip
+  url       String   // chemin ou URL signée
+  metadata  String?  // JSON: format, bleed, fonts
+  createdAt DateTime @default(now())
+}
+
+model PrintJob {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  provider   String?  // printful | lulu | manual
+  status     String   @default("pending")
+  externalId String?
+  checkoutUrl String?
+  metadata   String?  // JSON
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Synopsis préfaits par thème (inspirations) — stockés en base pour affichage instantané
+model PremadeSynopsis {
+  id         String   @id @default(cuid())
+  themeId    String   // ex: pirates, espace
+  themeLabel String   // ex: Pirates
+  icon       String   // emoji
+  synopsis   String   // JSON SynopsisOutput
+  sortOrder  Int      @default(0) // plusieurs synopsis par thème
+  createdAt  DateTime @default(now())
+}

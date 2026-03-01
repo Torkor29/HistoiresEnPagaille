@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Env (clés API, tokens — ne jamais committer)
+.env
+.env.local
+.env.*.local
+
+# Build & Next
+.next/
+out/
+build/
+dist/
+
+# Prisma
+*.db
+*.db-journal
+
+# Uploads & exports
+uploads/
+exports/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tests
+coverage/
+.nyc_output/
