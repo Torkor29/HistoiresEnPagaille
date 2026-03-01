@@ -1,5 +1,6 @@
 // Copie du schéma pour production (Render, etc.) — PostgreSQL
 // En déploiement : cp prisma/schema.postgresql.prisma prisma/schema.prisma avant prisma generate / db push
+// IMPORTANT : utiliser l’URL Neon POOLED (hostname avec -pooler) et ajouter ?connect_timeout=15 pour éviter "Connection closed".
 
 generator client {
   provider = "prisma-client-js"

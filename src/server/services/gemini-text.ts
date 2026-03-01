@@ -4,6 +4,7 @@
  */
 
 import { createHash } from 'crypto';
+import { HarmBlockThreshold, HarmCategory } from '@google/genai';
 import { gemini, getTextModel, isGeminiAvailable } from './gemini-client';
 import { logger } from '@/lib/logger';
 import type { SynopsisOutput } from '@/lib/schemas';
@@ -19,10 +20,10 @@ const USE_RELAXED_SAFETY = process.env.GEMINI_USE_RELAXED_SAFETY !== 'false';
 export const SAFETY_CONFIG = USE_RELAXED_SAFETY
   ? {
       safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       ],
     }
   : undefined;
@@ -89,7 +90,7 @@ async function withRetry<T>(
 }
 
 const PREMADE_SYNOPSIS_SYSTEM = `Tu es un "StoryPlanner" expert en histoires pour enfants. Tu produis UNIQUEMENT du JSON valide, sans texte avant ou après.
-Règles : pas de violence, ton bienveillant, adapté à la jeunesse.
+Règles : pas de violence, ton bienveillant, adapté à la jeunesse. Contenu strictement pour enfants, rien d'effrayant ni interdit.
 Format de réponse : { title, childCharacterName, moral (optionnel), chapters: [{ title, scenes: [{ title, summary }] }], safetyChecklist (optionnel) }.`;
 
 const STORY_ARC_TYPES = [

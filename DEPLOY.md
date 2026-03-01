@@ -11,7 +11,7 @@ Ce guide permet d’héberger la web app **Histoires Enfant** sur [Render](https
 
 1. Créez une base **PostgreSQL** où vous voulez (gratuit) :
    - [Neon](https://neon.tech), [Supabase](https://supabase.com), ou sur Render : **New** → **PostgreSQL** (sans lier au blueprint).  
-   Copiez l’URL de connexion (ex. `postgresql://user:pass@host/db?sslmode=require`).
+   Copiez l’URL de connexion. **Avec Neon** : utilisez l’URL **pooled** (hostname avec `-pooler`, ex. `ep-xxx-pooler.region.aws.neon.tech`) pour éviter les erreurs « Connection closed » en prod.
 
 2. Poussez le projet sur GitHub (ou GitLab).
 
@@ -92,9 +92,29 @@ Pour avoir **tous les thèmes avec leurs synopsis**, comme en local, exécute **
 - **Copier local → Neon** : avec des données modifiées en local (SQLite), définis `NEON_DATABASE_URL` et `DATABASE_URL`, puis `npm run sync-to-neon`.
 - Pour **changer le schéma** de la base : adapter `prisma/schema.postgresql.prisma`, puis garder `npx prisma db push` dans le Build Command sur Render.
 
+## Pourquoi ça marche en local mais pas en ligne ?
+
+Ta clé API est **la même**, mais en local c’est ton fichier **`.env`** qui est lu au démarrage de l’app. En ligne (Render), **il n’y a pas de `.env`** : les variables doivent être définies dans le **Dashboard Render** et sont injectées **au moment où le service tourne**.
+
+Donc si « la clé est bonne » en local et que ça ne marche pas en ligne, dans 99 % des cas c’est que **l’app en ligne ne reçoit pas la clé** :
+
+1. **Variable pas définie sur Render**  
+   Dashboard → ton Web Service → **Environment**. Il doit y avoir une entrée **exactement** nommée `GEMINI_API_KEY` (sensible à la casse, pas d’espace). La valeur = ta clé (en Secret si tu veux qu’elle soit masquée).
+
+2. **Variable ajoutée après le déploiement**  
+   Dès que tu modifies l’Environment, il faut faire **Save** puis **Manual Deploy** (ou déclencher un nouveau déploiement). L’instance qui tourne ne recharge pas les variables toute seule.
+
+3. **Typo ou mauvaise variable**  
+   Un espace en trop, `GEMINI_API_KEY ` au lieu de `GEMINI_API_KEY`, ou une variable préremplie vide : l’app reçoit alors une chaîne vide et Gemini n’est pas « disponible ».
+
+**Vérification rapide** : une fois l’app déployée, ouvre dans le navigateur :  
+`https://ton-app.onrender.com/api/env-check`  
+Tu dois voir `"geminiConfigured": true`. Si c’est `false`, la clé n’est pas vue par le serveur → retourne sur Render, corrige l’Environment, sauvegarde, redéploie, puis revérifie `/api/env-check`.
+
 ## Dépannage
 
 - **Build échoue sur `prisma db push`** : vérifier que `DATABASE_URL` est bien défini pour le **build** (Render propose d’injecter les variables de la DB au build).
 - **Erreur "column does not exist"** : le schéma en prod n’est pas à jour. Relancer un déploiement (build refait un `prisma db push`).
 - **Images / illustrations ne s’affichent pas** : vérifier que `UPLOAD_DIR` pointe vers un Disk monté si vous utilisez l’option 1 (Render Disk), et que le dossier existe.
-- **« Réponse Gemini bloquée » / PROHIBITED_CONTENT** : en prod, vérifier que `GEMINI_API_KEY` est bien définie (identique à la clé qui marche en local). Si ça marchait en local et plus en prod, souvent la clé n’est pas renseignée ou comporte une typo. Sinon, essayer un autre thème ou mettre `GEMINI_USE_RELAXED_SAFETY=false` pour revenir au comportement par défaut de l’API.
+- **« Réponse Gemini bloquée » / PROHIBITED_CONTENT** : d’abord vérifier `/api/env-check` (si `geminiConfigured: false`, voir la section « Pourquoi ça marche en local mais pas en ligne ? »). Si la clé est bien vue, le blocage vient du contenu ou des filtres Google ; essayer un autre thème, ou ajouter la variable **`GEMINI_USE_RELAXED_SAFETY`** = `false` au même endroit que `GEMINI_API_KEY` (onglet Environment sur Render, ou dans ton `.env` en local).
+- **Erreur PostgreSQL "Connection closed" / "Error kind: Closed"** : avec Neon, il faut (1) utiliser l’**URL en mode pooler** (hostname avec **`-pooler`**, ex. `ep-xxx-pooler.eu-west-2.aws.neon.tech`) — Dashboard Neon → Connect → activer **Connection pooling** et copier cette URL ; (2) ajouter **`&connect_timeout=15`** à la fin de `DATABASE_URL` sur Render (ex. `...?sslmode=require&connect_timeout=15`) pour limiter les timeouts au réveil du compute. Si l’erreur continue, vérifier que tu n’utilises pas l’URL « direct » (sans `-pooler`).
